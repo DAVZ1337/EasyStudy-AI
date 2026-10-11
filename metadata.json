@@ -1,0 +1,8 @@
+{
+  "name": "EstudiaFácil AI - Plataforma de Estudio Inteligente",
+  "description": "Organiza tus asignaturas, temas y apuntes en PDF, imagen y texto. Horario escolar, calendario y tutor inteligente con IA Gemini para resolver dudas, resúmenes y cuestionarios.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
