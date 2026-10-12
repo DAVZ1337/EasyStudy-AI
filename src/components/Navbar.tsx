@@ -12,10 +12,15 @@ import {
   User,
   Lock,
   Users,
+  Layers,
+  Cloud,
+  CloudUpload,
 } from 'lucide-react';
+import { User as FirebaseUser } from 'firebase/auth';
 import { UserProfile } from '../types';
+import { PWAInstallPrompt } from './PWAInstallPrompt';
 
-export type NavTab = 'subjects' | 'schedule' | 'calendar' | 'tutor' | 'settings';
+export type NavTab = 'subjects' | 'flashcards' | 'schedule' | 'calendar' | 'tutor' | 'settings';
 
 interface NavbarProps {
   activeTab: NavTab;
@@ -27,6 +32,9 @@ interface NavbarProps {
   studentName?: string;
   onOpenNameModal?: () => void;
   onLockProfile?: () => void;
+  saveNotification?: string | null;
+  firebaseUser?: FirebaseUser | null;
+  onOpenAuthModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -39,12 +47,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   studentName,
   onOpenNameModal,
   onLockProfile,
+  saveNotification,
+  firebaseUser,
+  onOpenAuthModal,
 }) => {
   const displayName = activeProfile?.name || studentName || '';
   const displayAvatar = activeProfile?.avatar || (activeProfile?.educationLevel?.includes('Primaria') ? '🎒' : '🎓');
 
   return (
-    <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
+    <header className="sticky top-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 transition-colors shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand */}
@@ -57,7 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-lg bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-300 bg-clip-text text-transparent">
+                <span className="font-bold text-lg bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-300 bg-clip-text text-indigo-600 dark:text-indigo-400 [background-clip:text] [-webkit-background-clip:text] [-webkit-text-fill-color:transparent]">
                   EstudiaFácil
                 </span>
                 <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
@@ -81,7 +92,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <BookOpen className="w-4 h-4" />
-              <span>Asignaturas & Temas</span>
+              <span>Asignaturas</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('flashcards')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
+                activeTab === 'flashcards'
+                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+              }`}
+            >
+              <Layers className="w-4 h-4 text-indigo-500" />
+              <span>Flashcards</span>
             </button>
 
             <button
@@ -157,6 +180,23 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
+            {/* Auto-Save Status Indicator */}
+            {saveNotification ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 animate-in fade-in duration-200 shadow-2xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span className="hidden sm:inline">{saveNotification}</span>
+                <span className="sm:hidden">Guardado ✓</span>
+              </div>
+            ) : (
+              <div
+                title="Autoguardado activado: todo lo que escribes se guarda al instante y también automáticamente al salir o recargar la web"
+                className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Autoguardado al salir</span>
+              </div>
+            )}
+
             {/* API Status Pill */}
             <button
               onClick={() => setActiveTab('settings')}
@@ -179,6 +219,32 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </>
               )}
             </button>
+
+            {/* Firebase Cloud Sync Button */}
+            {onOpenAuthModal && (
+              <button
+                onClick={onOpenAuthModal}
+                title={
+                  firebaseUser
+                    ? `Sincronización activa en Firebase (${firebaseUser.email || 'Conectado'})`
+                    : 'Conectar con Firebase para sincronizar entre dispositivos'
+                }
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border shadow-2xs ${
+                  firebaseUser
+                    ? 'bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'
+                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-750'
+                }`}
+              >
+                <Cloud className={`w-3.5 h-3.5 ${firebaseUser ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500'}`} />
+                <span className="hidden sm:inline">
+                  {firebaseUser ? 'Nube Activa' : 'Nube'}
+                </span>
+                {firebaseUser && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />}
+              </button>
+            )}
+
+            {/* App Móvil PWA Install Shortcut Button */}
+            <PWAInstallPrompt variant="navbar" />
 
             {/* Dark Mode Toggle */}
             <button
@@ -206,10 +272,10 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Mobile Bottom Navigation Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 px-2 py-1.5 flex justify-around items-center">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] flex justify-around items-center shadow-lg">
         <button
           onClick={() => setActiveTab('subjects')}
-          className={`flex flex-col items-center py-1 px-3 rounded-lg text-[11px] font-medium transition-colors ${
+          className={`flex flex-col items-center py-1 px-2.5 rounded-lg text-[11px] font-medium transition-colors ${
             activeTab === 'subjects'
               ? 'text-indigo-600 dark:text-indigo-400'
               : 'text-slate-500 dark:text-slate-400'
@@ -217,6 +283,18 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <BookOpen className="w-5 h-5 mb-0.5" />
           <span>Materias</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('flashcards')}
+          className={`flex flex-col items-center py-1 px-2.5 rounded-lg text-[11px] font-medium transition-colors ${
+            activeTab === 'flashcards'
+              ? 'text-indigo-600 dark:text-indigo-400'
+              : 'text-slate-500 dark:text-slate-400'
+          }`}
+        >
+          <Layers className="w-5 h-5 mb-0.5 text-indigo-500" />
+          <span>Tarjetas</span>
         </button>
 
         <button

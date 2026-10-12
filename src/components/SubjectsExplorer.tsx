@@ -38,6 +38,7 @@ interface SubjectsExplorerProps {
   onOpenViewer: (file: StudyFile) => void;
   onLaunchQuiz: (quiz: QuizItem) => void;
   onOpenTutorWithContext: (subjectId: string, topicId: string) => void;
+  onOpenFlashcards?: (subjectId?: string, topicId?: string) => void;
   initialSubjectId?: string;
   studentName?: string;
   educationLevel?: string;
@@ -49,6 +50,7 @@ export const SubjectsExplorer: React.FC<SubjectsExplorerProps> = ({
   onOpenViewer,
   onLaunchQuiz,
   onOpenTutorWithContext,
+  onOpenFlashcards,
   initialSubjectId,
   studentName,
   educationLevel,
@@ -923,14 +925,27 @@ export const SubjectsExplorer: React.FC<SubjectsExplorerProps> = ({
                   )}
                 </div>
 
-                {/* Quick AI Tutor Launcher Button */}
-                <button
-                  onClick={() => onOpenTutorWithContext(currentSubject.id, currentTopic.id)}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-purple-500/20 flex items-center gap-2 self-start sm:self-auto transition-all shrink-0"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Preguntar Dudas con IA</span>
-                </button>
+                {/* Action Buttons: AI Tutor & Flashcards */}
+                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
+                  {onOpenFlashcards && (
+                    <button
+                      onClick={() => onOpenFlashcards(currentSubject.id, currentTopic.id)}
+                      className="px-3.5 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold shadow-2xs flex items-center gap-2 transition-all shrink-0"
+                      title="Ver o crear flashcards de este tema"
+                    >
+                      <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      <span>Flashcards del Tema</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => onOpenTutorWithContext(currentSubject.id, currentTopic.id)}
+                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-purple-500/20 flex items-center gap-2 transition-all shrink-0"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Preguntar Dudas con IA</span>
+                  </button>
+                </div>
               </div>
 
               {/* Navigation Tabs inside the Topic */}

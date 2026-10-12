@@ -1,0 +1,139 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile and general settings for EstudiaFácil AI",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "name": { "type": "string", "maxLength": 100 },
+        "educationLevel": { "type": "string", "maxLength": 100 },
+        "avatar": { "type": "string", "maxLength": 20 },
+        "theme": { "type": "string", "enum": ["light", "dark"] },
+        "defaultDifficulty": { "type": "string", "enum": ["facil", "medio", "dificil"] },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "name"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "School subject with its syllabus topics and notes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 150 },
+        "code": { "type": "string", "maxLength": 50 },
+        "color": { "type": "string", "maxLength": 50 },
+        "icon": { "type": "string", "maxLength": 50 },
+        "teacher": { "type": "string", "maxLength": 100 },
+        "classroom": { "type": "string", "maxLength": 100 },
+        "topics": { "type": "array" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "ownerId", "name", "color", "icon"]
+    },
+    "UserFlashcard": {
+      "title": "UserFlashcard",
+      "description": "Flashcard created for interactive spaced repetition study",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "subjectId": { "type": "string", "maxLength": 128 },
+        "topicId": { "type": "string", "maxLength": 128 },
+        "topicName": { "type": "string", "maxLength": 150 },
+        "front": { "type": "string", "maxLength": 2000 },
+        "back": { "type": "string", "maxLength": 3000 },
+        "hint": { "type": "string", "maxLength": 1000 },
+        "difficulty": { "type": "string", "enum": ["facil", "medio", "dificil"] },
+        "createdAt": { "type": "string" },
+        "lastReviewedAt": { "type": "string" },
+        "reviewCount": { "type": "number" },
+        "correctCount": { "type": "number" },
+        "incorrectCount": { "type": "number" }
+      },
+      "required": ["id", "ownerId", "subjectId", "front", "back", "difficulty"]
+    },
+    "ScheduleSlot": {
+      "title": "ScheduleSlot",
+      "description": "A weekly recurring class time slot",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "dayOfWeek": { "type": "number" },
+        "startTime": { "type": "string", "maxLength": 10 },
+        "endTime": { "type": "string", "maxLength": 10 },
+        "subjectId": { "type": "string", "maxLength": 128 },
+        "room": { "type": "string", "maxLength": 50 },
+        "teacher": { "type": "string", "maxLength": 100 },
+        "note": { "type": "string", "maxLength": 200 }
+      },
+      "required": ["id", "ownerId", "dayOfWeek", "startTime", "endTime", "subjectId"]
+    },
+    "CalendarEvent": {
+      "title": "CalendarEvent",
+      "description": "An exam, deadline, or homework reminder event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "date": { "type": "string", "maxLength": 20 },
+        "time": { "type": "string", "maxLength": 10 },
+        "subjectId": { "type": "string", "maxLength": 128 },
+        "topicId": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "enum": ["exam", "assignment", "homework", "reminder", "holiday"] },
+        "description": { "type": "string", "maxLength": 1000 },
+        "completed": { "type": "boolean" }
+      },
+      "required": ["id", "ownerId", "title", "date", "type", "completed"]
+    },
+    "StudyFileRecord": {
+      "title": "StudyFileRecord",
+      "description": "Metadata and extracted text of a study document or PDF",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "topicId": { "type": "string", "maxLength": 128 },
+        "subjectId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 255 },
+        "size": { "type": "number" },
+        "mimeType": { "type": "string", "maxLength": 100 },
+        "dataUrl": { "type": "string", "maxLength": 800000 },
+        "extractedText": { "type": "string", "maxLength": 500000 },
+        "uploadedAt": { "type": "string" }
+      },
+      "required": ["id", "ownerId", "name", "mimeType"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile preferences and settings"
+    },
+    "/users/{userId}/subjects/{subjectId}": {
+      "schema": "Subject",
+      "description": "Subjects, syllabus topics, and notes created by the user"
+    },
+    "/users/{userId}/flashcards/{flashcardId}": {
+      "schema": "UserFlashcard",
+      "description": "Flashcards created and studied by the user"
+    },
+    "/users/{userId}/schedule/{slotId}": {
+      "schema": "ScheduleSlot",
+      "description": "User school timetable and schedule slots"
+    },
+    "/users/{userId}/calendar/{eventId}": {
+      "schema": "CalendarEvent",
+      "description": "Exams and study deadlines for the user"
+    },
+    "/users/{userId}/studyFiles/{fileId}": {
+      "schema": "StudyFileRecord",
+      "description": "Study documents, summaries, and notes files"
+    }
+  }
+}

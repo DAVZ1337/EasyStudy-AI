@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Navbar, NavTab } from './components/Navbar';
 import { SubjectsExplorer } from './components/SubjectsExplorer';
 import { SchoolSchedule } from './components/SchoolSchedule';
@@ -15,6 +15,8 @@ import { QuizRunnerModal } from './components/QuizRunnerModal';
 import { StudentNameModal } from './components/StudentNameModal';
 import { ProfileManagerModal } from './components/ProfileManagerModal';
 import { PinLockScreen } from './components/PinLockScreen';
+import { FlashcardsView } from './components/FlashcardsView';
+import { AuthModal } from './components/AuthModal';
 import {
   Subject,
   ScheduleSlot,
@@ -23,7 +25,23 @@ import {
   StudyFile,
   QuizItem,
   UserProfile,
+  UserFlashcard,
 } from './types';
+import {
+  subscribeToAuth,
+  pullAllUserDataFromCloud,
+  syncAllLocalDataToCloud,
+  saveCloudSubject,
+  deleteCloudSubject,
+  saveCloudFlashcard,
+  deleteCloudFlashcard,
+  saveCloudScheduleSlot,
+  deleteCloudScheduleSlot,
+  saveCloudCalendarEvent,
+  deleteCloudCalendarEvent,
+  FullCloudData,
+} from './services/firebase';
+import { User as FirebaseUser } from 'firebase/auth';
 import {
   loadSubjects,
   saveSubjects,
@@ -33,12 +51,16 @@ import {
   saveCalendarEvents,
   loadSettings,
   saveSettings,
+  loadFlashcards,
+  saveFlashcards,
   INITIAL_SUBJECTS,
   INITIAL_SCHEDULE,
   INITIAL_CALENDAR,
+  INITIAL_FLASHCARDS,
   getStoredApiKey,
   getActiveProfile,
   setActiveProfileId,
+  flushAllData,
 } from './utils/storage';
 
 export default function App() {
@@ -49,11 +71,80 @@ export default function App() {
   const [isLocked, setIsLocked] = useState<boolean>(false);
   const [isProfileManagerOpen, setIsProfileManagerOpen] = useState<boolean>(false);
 
+  // Firebase Auth and Cloud Sync states
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+
+  // Auto-save visual indicator state
+  const [saveNotification, setSaveNotification] = useState<string | null>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerSaveFeedback = (msg = 'Guardado automáticamente ✓') => {
+    setSaveNotification(msg);
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      setSaveNotification(null);
+    }, 2200);
+  };
+
   // Core data states loaded from persistent storage for active profile
   const [subjects, setSubjects] = useState<Subject[]>(() => loadSubjects(activeProfile.id));
   const [schedule, setSchedule] = useState<ScheduleSlot[]>(() => loadSchedule(activeProfile.id));
   const [calendar, setCalendar] = useState<CalendarEvent[]>(() => loadCalendarEvents(activeProfile.id));
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings(activeProfile.id));
+  const [flashcards, setFlashcards] = useState<UserFlashcard[]>(() => loadFlashcards(activeProfile.id));
+
+  // Firebase auth state change listener
+  useEffect(() => {
+    const unsubscribe = subscribeToAuth(async (user) => {
+      setCurrentUser(user);
+      if (user) {
+        try {
+          const cloudData = await pullAllUserDataFromCloud(user.uid);
+          if (
+            cloudData.subjects.length > 0 ||
+            cloudData.flashcards.length > 0 ||
+            cloudData.schedule.length > 0 ||
+            cloudData.calendar.length > 0
+          ) {
+            handleApplyCloudData(cloudData);
+          }
+        } catch (err) {
+          console.warn('Error reading initial cloud data on auth state:', err);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleApplyCloudData = (cloudData: FullCloudData) => {
+    if (cloudData.subjects && cloudData.subjects.length > 0) {
+      setSubjects(cloudData.subjects);
+      saveSubjects(cloudData.subjects, activeProfile.id);
+    }
+    if (cloudData.flashcards && cloudData.flashcards.length > 0) {
+      setFlashcards(cloudData.flashcards);
+      saveFlashcards(cloudData.flashcards, activeProfile.id);
+    }
+    if (cloudData.schedule && cloudData.schedule.length > 0) {
+      setSchedule(cloudData.schedule);
+      saveSchedule(cloudData.schedule, activeProfile.id);
+    }
+    if (cloudData.calendar && cloudData.calendar.length > 0) {
+      setCalendar(cloudData.calendar);
+      saveCalendarEvents(cloudData.calendar, activeProfile.id);
+    }
+    if (cloudData.userProfile) {
+      const updatedProfile: UserProfile = {
+        ...activeProfile,
+        name: cloudData.userProfile.name || activeProfile.name,
+        educationLevel: cloudData.userProfile.educationLevel || activeProfile.educationLevel,
+        avatar: cloudData.userProfile.avatar || activeProfile.avatar,
+      };
+      setActiveProfile(updatedProfile);
+    }
+    triggerSaveFeedback('Datos sincronizados desde la nube ☁️✓');
+  };
 
   // Student name prompt modal (initial setup if completely blank)
   const [isNameModalOpen, setIsNameModalOpen] = useState<boolean>(() => {
@@ -71,6 +162,7 @@ export default function App() {
 
   // Cross-tab interaction context
   const [tutorContext, setTutorContext] = useState<{ subjectId?: string; topicId?: string }>({});
+  const [flashcardContext, setFlashcardContext] = useState<{ subjectId?: string; topicId?: string }>({});
 
   // Sync dark theme with document root & body
   useEffect(() => {
@@ -94,10 +186,12 @@ export default function App() {
     const loadedSched = loadSchedule(newProfile.id);
     const loadedCal = loadCalendarEvents(newProfile.id);
     const loadedSett = loadSettings(newProfile.id);
+    const loadedFlash = loadFlashcards(newProfile.id);
     setSubjects(loadedSubs);
     setSchedule(loadedSched);
     setCalendar(loadedCal);
     setSettings(loadedSett);
+    setFlashcards(loadedFlash);
     setIsLocked(false);
   };
 
@@ -110,26 +204,96 @@ export default function App() {
     });
   };
 
-  // Save changes for current profile
+  // Save changes for current profile with instant auto-save feedback & cloud sync
   const handleUpdateSubjects = (newSubjects: Subject[]) => {
     setSubjects(newSubjects);
     saveSubjects(newSubjects, activeProfile.id);
+    triggerSaveFeedback('Asignaturas y temas guardados ✓');
+    if (currentUser) {
+      for (const s of newSubjects) {
+        saveCloudSubject(currentUser.uid, s).catch((err) =>
+          console.warn('Background cloud sync subject notice:', err)
+        );
+      }
+    }
   };
 
   const handleUpdateSchedule = (newSchedule: ScheduleSlot[]) => {
     setSchedule(newSchedule);
     saveSchedule(newSchedule, activeProfile.id);
+    triggerSaveFeedback('Horario escolar guardado ✓');
+    if (currentUser) {
+      for (const slot of newSchedule) {
+        saveCloudScheduleSlot(currentUser.uid, slot).catch((err) =>
+          console.warn('Background cloud sync slot notice:', err)
+        );
+      }
+    }
   };
 
   const handleUpdateCalendar = (newCalendar: CalendarEvent[]) => {
     setCalendar(newCalendar);
     saveCalendarEvents(newCalendar, activeProfile.id);
+    triggerSaveFeedback('Calendario escolar guardado ✓');
+    if (currentUser) {
+      for (const event of newCalendar) {
+        saveCloudCalendarEvent(currentUser.uid, event).catch((err) =>
+          console.warn('Background cloud sync event notice:', err)
+        );
+      }
+    }
   };
 
   const handleUpdateSettings = (newSettings: AppSettings) => {
     setSettings(newSettings);
     saveSettings(newSettings, activeProfile.id);
+    triggerSaveFeedback('Ajustes guardados ✓');
   };
+
+  const handleUpdateFlashcards = (newCards: UserFlashcard[]) => {
+    setFlashcards(newCards);
+    saveFlashcards(newCards, activeProfile.id);
+    triggerSaveFeedback('Tarjetas flashcards guardadas ✓');
+    if (currentUser) {
+      for (const card of newCards) {
+        saveCloudFlashcard(currentUser.uid, card).catch((err) =>
+          console.warn('Background cloud sync flashcard notice:', err)
+        );
+      }
+    }
+  };
+
+  // Guaranteed Automatic Save on Web Exit, Refresh, Tab Close or App Switch
+  useEffect(() => {
+    const handleEmergencySave = () => {
+      flushAllData({
+        profileId: activeProfile.id,
+        subjects,
+        schedule,
+        calendar,
+        settings,
+        flashcards,
+      });
+    };
+
+    // Trigger on closing tab / leaving web
+    window.addEventListener('beforeunload', handleEmergencySave);
+    window.addEventListener('pagehide', handleEmergencySave);
+
+    // Trigger on mobile switching tabs / home screen
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        handleEmergencySave();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleEmergencySave);
+      window.removeEventListener('pagehide', handleEmergencySave);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [activeProfile.id, subjects, schedule, calendar, settings, flashcards]);
 
   const handleSaveStudentName = (name: string, level: string) => {
     const updatedProfile: UserProfile = {
@@ -156,6 +320,8 @@ export default function App() {
       saveSchedule(INITIAL_SCHEDULE);
       setCalendar(INITIAL_CALENDAR);
       saveCalendarEvents(INITIAL_CALENDAR);
+      setFlashcards(INITIAL_FLASHCARDS);
+      saveFlashcards(INITIAL_FLASHCARDS, activeProfile.id);
     }
   };
 
@@ -166,6 +332,7 @@ export default function App() {
     calendar?: CalendarEvent[];
     studentName?: string;
     educationLevel?: string;
+    flashcards?: UserFlashcard[];
   }) => {
     if (backup.subjects && Array.isArray(backup.subjects)) {
       handleUpdateSubjects(backup.subjects);
@@ -175,6 +342,9 @@ export default function App() {
     }
     if (backup.calendar && Array.isArray(backup.calendar)) {
       handleUpdateCalendar(backup.calendar);
+    }
+    if (backup.flashcards && Array.isArray(backup.flashcards)) {
+      handleUpdateFlashcards(backup.flashcards);
     }
     if (backup.studentName || backup.educationLevel) {
       handleUpdateSettings({
@@ -194,6 +364,11 @@ export default function App() {
   const handleDeleteSlot = (slotId: string) => {
     const updated = schedule.filter((s) => s.id !== slotId);
     handleUpdateSchedule(updated);
+    if (currentUser) {
+      deleteCloudScheduleSlot(currentUser.uid, slotId).catch((err) =>
+        console.warn('Cloud delete slot notice:', err)
+      );
+    }
   };
 
   // Calendar event actions
@@ -212,6 +387,11 @@ export default function App() {
   const handleDeleteCalendarEvent = (eventId: string) => {
     const updated = calendar.filter((ev) => ev.id !== eventId);
     handleUpdateCalendar(updated);
+    if (currentUser) {
+      deleteCloudCalendarEvent(currentUser.uid, eventId).catch((err) =>
+        console.warn('Cloud delete event notice:', err)
+      );
+    }
   };
 
   // Switch to Tutor with specific topic context
@@ -259,6 +439,9 @@ export default function App() {
         studentName={activeProfile.name || settings.studentName}
         onOpenNameModal={() => setIsProfileManagerOpen(true)}
         onLockProfile={() => setIsLocked(true)}
+        saveNotification={saveNotification}
+        firebaseUser={currentUser}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
       />
 
       {/* Main Tab Views */}
@@ -270,9 +453,26 @@ export default function App() {
             onOpenViewer={(file) => setViewingFile(file)}
             onLaunchQuiz={(quiz) => setActiveQuiz(quiz)}
             onOpenTutorWithContext={handleOpenTutorWithContext}
+            onOpenFlashcards={(subId, topId) => {
+              setFlashcardContext({ subjectId: subId, topicId: topId });
+              setActiveTab('flashcards');
+            }}
             initialSubjectId={tutorContext.subjectId}
             studentName={activeProfile.name || settings.studentName}
             educationLevel={activeProfile.educationLevel || settings.educationLevel}
+          />
+        )}
+
+        {activeTab === 'flashcards' && (
+          <FlashcardsView
+            subjects={subjects}
+            flashcards={flashcards}
+            onUpdateFlashcards={handleUpdateFlashcards}
+            initialSubjectId={flashcardContext.subjectId}
+            initialTopicId={flashcardContext.topicId}
+            studentName={activeProfile.name || settings.studentName}
+            educationLevel={activeProfile.educationLevel || settings.educationLevel}
+            activeProfileId={activeProfile.id}
           />
         )}
 
@@ -308,6 +508,7 @@ export default function App() {
             initialTopicId={tutorContext.topicId}
             studentName={activeProfile.name || settings.studentName}
             educationLevel={activeProfile.educationLevel || settings.educationLevel}
+            activeProfileId={activeProfile.id}
           />
         )}
 
@@ -318,7 +519,10 @@ export default function App() {
             subjects={subjects}
             schedule={schedule}
             calendar={calendar}
+            flashcards={flashcards}
             activeProfile={activeProfile}
+            firebaseUser={currentUser}
+            onOpenAuthModal={() => setIsAuthModalOpen(true)}
             onOpenProfileManager={() => setIsProfileManagerOpen(true)}
             onLockProfile={() => setIsLocked(true)}
             onResetAllData={handleResetAllData}
@@ -383,6 +587,20 @@ export default function App() {
           onSaveScore={handleSaveQuizScore}
         />
       )}
+
+      {/* Firebase Cloud Sync & Multidevice Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        currentUser={currentUser}
+        activeProfile={activeProfile}
+        subjects={subjects}
+        flashcards={flashcards}
+        schedule={schedule}
+        calendar={calendar}
+        onApplyCloudData={handleApplyCloudData}
+        onSyncComplete={(msg) => triggerSaveFeedback(msg)}
+      />
     </div>
   );
 }

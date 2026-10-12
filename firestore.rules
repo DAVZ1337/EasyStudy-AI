@@ -1,0 +1,158 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net - Default Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connectivity Test Document
+    match /test/{testId} {
+      allow get: if true;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity validation functions
+    function isValidUserProfile(data) {
+      return data.uid is string && data.uid == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 256)) &&
+             (!('educationLevel' in data) || (data.educationLevel is string && data.educationLevel.size() <= 100)) &&
+             (!('avatar' in data) || (data.avatar is string && data.avatar.size() <= 50)) &&
+             (!('theme' in data) || (data.theme in ['light', 'dark'])) &&
+             (!('defaultDifficulty' in data) || (data.defaultDifficulty in ['facil', 'medio', 'dificil']));
+    }
+
+    function isValidSubject(data) {
+      return data.id is string && isValidId(data.id) &&
+             data.ownerId is string && data.ownerId == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 150 &&
+             data.color is string && data.color.size() <= 50 &&
+             data.icon is string && data.icon.size() <= 50 &&
+             (!('code' in data) || (data.code is string && data.code.size() <= 50)) &&
+             (!('teacher' in data) || (data.teacher is string && data.teacher.size() <= 100)) &&
+             (!('classroom' in data) || (data.classroom is string && data.classroom.size() <= 100)) &&
+             (!('topics' in data) || (data.topics is list && data.topics.size() <= 150));
+    }
+
+    function isValidFlashcard(data) {
+      return data.id is string && isValidId(data.id) &&
+             data.ownerId is string && data.ownerId == request.auth.uid &&
+             data.subjectId is string && isValidId(data.subjectId) &&
+             data.front is string && data.front.size() > 0 && data.front.size() <= 4000 &&
+             data.back is string && data.back.size() > 0 && data.back.size() <= 5000 &&
+             data.difficulty in ['facil', 'medio', 'dificil'] &&
+             (!('topicId' in data) || (data.topicId is string && data.topicId.size() <= 128)) &&
+             (!('topicName' in data) || (data.topicName is string && data.topicName.size() <= 150)) &&
+             (!('hint' in data) || (data.hint is string && data.hint.size() <= 1000)) &&
+             (!('reviewCount' in data) || data.reviewCount is number) &&
+             (!('correctCount' in data) || data.correctCount is number) &&
+             (!('incorrectCount' in data) || data.incorrectCount is number);
+    }
+
+    function isValidScheduleSlot(data) {
+      return data.id is string && isValidId(data.id) &&
+             data.ownerId is string && data.ownerId == request.auth.uid &&
+             data.dayOfWeek is number && data.dayOfWeek >= 1 && data.dayOfWeek <= 7 &&
+             data.startTime is string && data.startTime.size() <= 10 &&
+             data.endTime is string && data.endTime.size() <= 10 &&
+             data.subjectId is string && isValidId(data.subjectId) &&
+             (!('room' in data) || (data.room is string && data.room.size() <= 50)) &&
+             (!('teacher' in data) || (data.teacher is string && data.teacher.size() <= 100)) &&
+             (!('note' in data) || (data.note is string && data.note.size() <= 200));
+    }
+
+    function isValidCalendarEvent(data) {
+      return data.id is string && isValidId(data.id) &&
+             data.ownerId is string && data.ownerId == request.auth.uid &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.date is string && data.date.size() <= 20 &&
+             data.completed is bool &&
+             data.type in ['exam', 'assignment', 'homework', 'reminder', 'holiday'] &&
+             (!('time' in data) || (data.time is string && data.time.size() <= 10)) &&
+             (!('subjectId' in data) || (data.subjectId is string && data.subjectId.size() <= 128)) &&
+             (!('topicId' in data) || (data.topicId is string && data.topicId.size() <= 128)) &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 1000));
+    }
+
+    function isValidStudyFile(data) {
+      return data.id is string && isValidId(data.id) &&
+             data.ownerId is string && data.ownerId == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 255 &&
+             data.mimeType is string && data.mimeType.size() <= 100 &&
+             (!('subjectId' in data) || (data.subjectId is string && data.subjectId.size() <= 128)) &&
+             (!('topicId' in data) || (data.topicId is string && data.topicId.size() <= 128)) &&
+             (!('dataUrl' in data) || (data.dataUrl is string && data.dataUrl.size() <= 800000)) &&
+             (!('extractedText' in data) || (data.extractedText is string && data.extractedText.size() <= 500000));
+    }
+
+    // MATCH RULES
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserProfile(incoming());
+      allow update: if isOwner(userId) && isValidUserProfile(incoming()) && incoming().uid == existing().uid;
+      allow delete: if isOwner(userId);
+
+      // Subcollection: subjects
+      match /subjects/{subjectId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(subjectId) && isValidSubject(incoming()) && incoming().ownerId == userId;
+        allow update: if isOwner(userId) && isValidId(subjectId) && isValidSubject(incoming()) && incoming().ownerId == existing().ownerId;
+        allow delete: if isOwner(userId) && isValidId(subjectId);
+      }
+
+      // Subcollection: flashcards
+      match /flashcards/{flashcardId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(flashcardId) && isValidFlashcard(incoming()) && incoming().ownerId == userId;
+        allow update: if isOwner(userId) && isValidId(flashcardId) && isValidFlashcard(incoming()) && incoming().ownerId == existing().ownerId;
+        allow delete: if isOwner(userId) && isValidId(flashcardId);
+      }
+
+      // Subcollection: schedule
+      match /schedule/{slotId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(slotId) && isValidScheduleSlot(incoming()) && incoming().ownerId == userId;
+        allow update: if isOwner(userId) && isValidId(slotId) && isValidScheduleSlot(incoming()) && incoming().ownerId == existing().ownerId;
+        allow delete: if isOwner(userId) && isValidId(slotId);
+      }
+
+      // Subcollection: calendar
+      match /calendar/{eventId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(eventId) && isValidCalendarEvent(incoming()) && incoming().ownerId == userId;
+        allow update: if isOwner(userId) && isValidId(eventId) && isValidCalendarEvent(incoming()) && incoming().ownerId == existing().ownerId;
+        allow delete: if isOwner(userId) && isValidId(eventId);
+      }
+
+      // Subcollection: studyFiles
+      match /studyFiles/{fileId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(fileId) && isValidStudyFile(incoming()) && incoming().ownerId == userId;
+        allow update: if isOwner(userId) && isValidId(fileId) && isValidStudyFile(incoming()) && incoming().ownerId == existing().ownerId;
+        allow delete: if isOwner(userId) && isValidId(fileId);
+      }
+    }
+  }
+}

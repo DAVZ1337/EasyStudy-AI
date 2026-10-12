@@ -1,4 +1,14 @@
-import { Subject, ScheduleSlot, CalendarEvent, AppSettings, StudyFile, UserProfile } from '../types';
+import {
+  Subject,
+  ScheduleSlot,
+  CalendarEvent,
+  AppSettings,
+  StudyFile,
+  UserProfile,
+  ChatMessage,
+  UserFlashcard,
+  DailyAiLimitInfo,
+} from '../types';
 
 const STORAGE_KEYS = {
   PROFILES: 'estudiafacil_profiles_v1',
@@ -474,3 +484,241 @@ export function saveCalendarEvents(events: CalendarEvent[], profileId?: string):
     console.error('Failed to save calendar events:', err);
   }
 }
+
+// ---------------------------------------------------------------------------
+// PER-PROFILE AI TUTOR CHAT HISTORY (AUTO-SAVED)
+// ---------------------------------------------------------------------------
+
+export function loadChatHistory(profileId?: string): ChatMessage[] {
+  const pid = profileId || getActiveProfileId();
+  try {
+    const raw = localStorage.getItem(getProfileKey(pid, 'chat_history'));
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (err) {
+    console.error('Failed to load chat history:', err);
+  }
+  return [];
+}
+
+export function saveChatHistory(messages: ChatMessage[], profileId?: string): void {
+  const pid = profileId || getActiveProfileId();
+  try {
+    // Keep up to 100 recent messages to prevent excessive localStorage usage
+    const toSave = messages.slice(-100);
+    localStorage.setItem(getProfileKey(pid, 'chat_history'), JSON.stringify(toSave));
+  } catch (err) {
+    console.error('Failed to save chat history:', err);
+  }
+}
+
+export function clearChatHistory(profileId?: string): void {
+  const pid = profileId || getActiveProfileId();
+  try {
+    localStorage.removeItem(getProfileKey(pid, 'chat_history'));
+  } catch {}
+}
+
+// ---------------------------------------------------------------------------
+// DAILY AI LIMIT TRACKING & RESET CALCULATION
+// ---------------------------------------------------------------------------
+
+const DEFAULT_DAILY_AI_LIMIT = 30; // 30 queries per day
+
+function getTodayDateString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function getAiDailyLimit(profileId?: string): DailyAiLimitInfo {
+  const pid = profileId || getActiveProfileId();
+  const today = getTodayDateString();
+  const customKey = getStoredApiKey(pid);
+  const hasCustomApiKey = Boolean(customKey && customKey.trim().length > 0);
+
+  // If user configured their own custom Gemini API key in settings, extended limit
+  const limit = hasCustomApiKey ? 200 : DEFAULT_DAILY_AI_LIMIT;
+
+  let used = 0;
+  try {
+    const raw = localStorage.getItem(getProfileKey(pid, 'ai_daily_usage'));
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.date === today && typeof parsed.used === 'number') {
+        used = parsed.used;
+      }
+    }
+  } catch {}
+
+  const remaining = Math.max(0, limit - used);
+  const percentRemaining = Math.max(0, Math.min(100, Math.round((remaining / limit) * 100)));
+
+  // Calculate midnight of the next day in local time
+  const now = new Date();
+  const tomorrowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+  const secondsUntilReset = Math.max(0, Math.floor((tomorrowMidnight.getTime() - now.getTime()) / 1000));
+
+  // Format date in Spanish (e.g. "Lunes, 13 de octubre de 2026")
+  const dateOptions: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  };
+  let resetDateString = tomorrowMidnight.toLocaleDateString('es-ES', dateOptions);
+  resetDateString = resetDateString.charAt(0).toUpperCase() + resetDateString.slice(1);
+
+  return {
+    date: today,
+    used,
+    limit,
+    remaining,
+    percentRemaining,
+    resetTimeString: '00:00 h',
+    resetDateString,
+    secondsUntilReset,
+    hasCustomApiKey,
+  };
+}
+
+export function incrementAiDailyLimit(profileId?: string): DailyAiLimitInfo {
+  const pid = profileId || getActiveProfileId();
+  const today = getTodayDateString();
+  const current = getAiDailyLimit(pid);
+  const newUsed = current.used + 1;
+
+  try {
+    localStorage.setItem(
+      getProfileKey(pid, 'ai_daily_usage'),
+      JSON.stringify({ date: today, used: newUsed })
+    );
+  } catch (err) {
+    console.error('Failed to increment AI daily limit:', err);
+  }
+
+  return getAiDailyLimit(pid);
+}
+
+export function checkAiDailyLimitAvailable(profileId?: string): boolean {
+  const info = getAiDailyLimit(profileId);
+  return info.remaining > 0;
+}
+
+// ---------------------------------------------------------------------------
+// PER-PROFILE USER FLASHCARDS
+// ---------------------------------------------------------------------------
+
+export const INITIAL_FLASHCARDS: UserFlashcard[] = [
+  {
+    id: 'fc-demo-1',
+    subjectId: 'sub-demo-1',
+    topicId: 'top-demo-1',
+    topicName: 'Álgebra y Ecuaciones',
+    front: '¿Cuál es la fórmula general para resolver ecuaciones de segundo grado ax² + bx + c = 0?',
+    back: 'x = (-b ± √(b² - 4ac)) / (2a)\n\nEl término (b² - 4ac) se llama discriminante (Δ). Si Δ > 0 hay dos soluciones reales.',
+    hint: 'Recuerda el signo ± antes de la raíz y que todo se divide entre 2a.',
+    difficulty: 'medio',
+    createdAt: new Date().toISOString(),
+    reviewCount: 0,
+    correctCount: 0,
+    incorrectCount: 0,
+  },
+  {
+    id: 'fc-demo-2',
+    subjectId: 'sub-demo-2',
+    topicId: 'top-demo-2',
+    topicName: 'Biología Celular',
+    front: '¿Qué orgánulo celular es conocido como la "central energética" y sintetiza ATP?',
+    back: 'La mitocondria.\n\nEs responsable de la respiración celular aeróbica y de la producción de ATP mediante fosforilación oxidativa.',
+    hint: 'Tiene doble membrana y su nombre empieza por la letra M.',
+    difficulty: 'facil',
+    createdAt: new Date().toISOString(),
+    reviewCount: 0,
+    correctCount: 0,
+    incorrectCount: 0,
+  },
+  {
+    id: 'fc-demo-3',
+    subjectId: 'sub-demo-3',
+    topicId: 'top-demo-3',
+    topicName: 'Historia Contemporánea',
+    front: '¿En qué año comenzó y terminó la Segunda Guerra Mundial?',
+    back: 'Comenzó en 1939 (1 de septiembre, invasión de Polonia) y finalizó en 1945 (capitulación de las potencias del Eje).',
+    hint: 'Duró exactamente 6 años.',
+    difficulty: 'facil',
+    createdAt: new Date().toISOString(),
+    reviewCount: 0,
+    correctCount: 0,
+    incorrectCount: 0,
+  },
+];
+
+export function loadFlashcards(profileId?: string): UserFlashcard[] {
+  const pid = profileId || getActiveProfileId();
+  try {
+    const raw = localStorage.getItem(getProfileKey(pid, 'flashcards'));
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (err) {
+    console.error('Failed to load flashcards:', err);
+  }
+  return INITIAL_FLASHCARDS;
+}
+
+export function saveFlashcards(cards: UserFlashcard[], profileId?: string): void {
+  const pid = profileId || getActiveProfileId();
+  try {
+    localStorage.setItem(getProfileKey(pid, 'flashcards'), JSON.stringify(cards));
+  } catch (err) {
+    console.error('Failed to save flashcards:', err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SYNCHRONOUS EMERGENCY FLUSH ON EXIT / BEFOREUNLOAD / PAGEHIDE
+// ---------------------------------------------------------------------------
+
+export function flushAllData(data: {
+  profileId: string;
+  subjects?: Subject[];
+  schedule?: ScheduleSlot[];
+  calendar?: CalendarEvent[];
+  settings?: AppSettings;
+  chatMessages?: ChatMessage[];
+  flashcards?: UserFlashcard[];
+}): void {
+  const { profileId, subjects, schedule, calendar, settings, chatMessages, flashcards } = data;
+  if (!profileId) return;
+  try {
+    if (subjects) {
+      localStorage.setItem(getProfileKey(profileId, 'subjects'), JSON.stringify(subjects));
+    }
+    if (schedule) {
+      localStorage.setItem(getProfileKey(profileId, 'schedule'), JSON.stringify(schedule));
+    }
+    if (calendar) {
+      localStorage.setItem(getProfileKey(profileId, 'calendar'), JSON.stringify(calendar));
+    }
+    if (settings) {
+      const toSave = { ...settings, geminiApiKey: undefined };
+      localStorage.setItem(getProfileKey(profileId, 'settings'), JSON.stringify(toSave));
+    }
+    if (chatMessages && chatMessages.length > 0) {
+      localStorage.setItem(getProfileKey(profileId, 'chat_history'), JSON.stringify(chatMessages.slice(-100)));
+    }
+    if (flashcards) {
+      localStorage.setItem(getProfileKey(profileId, 'flashcards'), JSON.stringify(flashcards));
+    }
+    localStorage.setItem('estudiafacil_last_autosave', new Date().toISOString());
+  } catch (e) {
+    console.error('Emergency autosave flush failed:', e);
+  }
+}
+

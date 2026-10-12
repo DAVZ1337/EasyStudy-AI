@@ -31,6 +31,34 @@ export interface Flashcard {
   back: string;
 }
 
+export interface UserFlashcard {
+  id: string;
+  subjectId: string;
+  topicId?: string;
+  topicName?: string;
+  front: string;
+  back: string;
+  hint?: string;
+  difficulty: 'facil' | 'medio' | 'dificil';
+  createdAt: string;
+  lastReviewedAt?: string;
+  reviewCount: number;
+  correctCount: number;
+  incorrectCount: number;
+}
+
+export interface DailyAiLimitInfo {
+  date: string;
+  used: number;
+  limit: number;
+  remaining: number;
+  percentRemaining: number;
+  resetTimeString: string;
+  resetDateString: string;
+  secondsUntilReset: number;
+  hasCustomApiKey: boolean;
+}
+
 export interface QuizItem {
   id: string;
   topicId: string;

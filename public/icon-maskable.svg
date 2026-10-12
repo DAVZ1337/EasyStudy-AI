@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGradMask" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="50%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#7c3aed" />
+    </linearGradient>
+    <filter id="shadowMask" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#312e81" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  <!-- Full bleed background for Android adaptive icon clipping -->
+  <rect width="512" height="512" fill="url(#bgGradMask)" />
+
+  <!-- Inner safe zone (scaled 0.72 to fit Android circle/squircle masks safely) -->
+  <g filter="url(#shadowMask)" transform="translate(256, 252) scale(0.72)">
+    <!-- Graduation Cap Mortarboard (Rhombus) -->
+    <path d="M 0 -80 L 150 -15 L 0 50 L -150 -15 Z" fill="#ffffff" />
+    
+    <!-- Cap Under Skullcap -->
+    <path d="M -95 10 C -95 65 95 65 95 10 L 95 35 C 95 90 -95 90 -95 35 Z" fill="#f1f5f9" />
+    
+    <!-- Cap Tassel Ribbon & Drop -->
+    <path d="M 0 -15 Q 120 5 125 55 L 122 105 A 8 8 0 0 0 138 105 L 135 55 Q 130 -5 0 -22" fill="#fbbf24" />
+    <circle cx="130" cy="115" r="9" fill="#fbbf24" />
+
+    <!-- AI Sparkle / Star 1 (Top Right) -->
+    <path d="M 110 -115 Q 110 -85 140 -85 Q 110 -85 110 -55 Q 110 -85 80 -85 Q 110 -85 110 -115 Z" fill="#fef08a" />
+    
+    <!-- AI Sparkle / Star 2 (Small, Top Left) -->
+    <path d="M -110 -105 Q -110 -88 -93 -88 Q -110 -88 -110 -71 Q -110 -88 -127 -88 Q -110 -88 -110 -105 Z" fill="#e0e7ff" />
+  </g>
+</svg>

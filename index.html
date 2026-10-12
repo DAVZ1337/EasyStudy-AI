@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>EstudiaFácil AI - Plataforma de Estudio Inteligente</title>
     <meta name="description" content="Organiza tus asignaturas, temas y apuntes en PDF, imagen y texto. Horario escolar, calendario y tutor inteligente con IA Gemini para resolver dudas, resúmenes y cuestionarios." />
     <meta property="og:title" content="EstudiaFácil AI - Plataforma de Estudio Inteligente" />
@@ -10,13 +10,32 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#4f46e5" />
+    <!-- Modo standalone sin barra de navegador para Android y Web -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="EstudiaFácil" />
+    <!-- Modo standalone sin barra de navegador para iOS Safari (Acceso directo a pantalla de inicio) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="EstudiaFácil" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
+    <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script>
       (function() {
         try {
-          var raw = localStorage.getItem('estudiafacil_settings_v1');
+          var activeId = localStorage.getItem('estudiafacil_active_profile_id_v1');
+          var raw = null;
+          if (activeId) {
+            raw = localStorage.getItem('estudiafacil_p_' + activeId + '_settings');
+          }
+          if (!raw) {
+            raw = localStorage.getItem('estudiafacil_settings_v1');
+          }
           if (raw) {
             var s = JSON.parse(raw);
             if (s.theme === 'dark') {

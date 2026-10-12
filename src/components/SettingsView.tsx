@@ -22,10 +22,14 @@ import {
   Lock,
   Users,
   ShieldAlert,
+  Cloud,
+  CloudUpload,
 } from 'lucide-react';
-import { AppSettings, Subject, ScheduleSlot, CalendarEvent, UserProfile } from '../types';
+import { User as FirebaseUser } from 'firebase/auth';
+import { AppSettings, Subject, ScheduleSlot, CalendarEvent, UserProfile, UserFlashcard } from '../types';
 import { setStoredApiKey, getStoredApiKey, hashPin } from '../utils/storage';
 import { askGeminiTutor } from '../services/geminiService';
+import { PWAInstallPrompt } from './PWAInstallPrompt';
 
 interface SettingsViewProps {
   settings: AppSettings;
@@ -33,7 +37,10 @@ interface SettingsViewProps {
   subjects: Subject[];
   schedule: ScheduleSlot[];
   calendar: CalendarEvent[];
+  flashcards?: UserFlashcard[];
   activeProfile?: UserProfile;
+  firebaseUser?: FirebaseUser | null;
+  onOpenAuthModal?: () => void;
   onOpenProfileManager?: () => void;
   onLockProfile?: () => void;
   onResetAllData: () => void;
@@ -41,6 +48,7 @@ interface SettingsViewProps {
     subjects?: Subject[];
     schedule?: ScheduleSlot[];
     calendar?: CalendarEvent[];
+    flashcards?: UserFlashcard[];
     studentName?: string;
     educationLevel?: string;
   }) => void;
@@ -62,7 +70,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   subjects,
   schedule,
   calendar,
+  flashcards,
   activeProfile,
+  firebaseUser,
+  onOpenAuthModal,
   onOpenProfileManager,
   onLockProfile,
   onResetAllData,
@@ -159,7 +170,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       subjects,
       schedule,
       calendar,
-      version: '2.4.0',
+      flashcards: flashcards || [],
+      version: '2.5.0',
     };
     const blob = new Blob([JSON.stringify(backupData, null, 2)], {
       type: 'application/json',
@@ -191,6 +203,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             subjects: Array.isArray(data.subjects) ? data.subjects : undefined,
             schedule: Array.isArray(data.schedule) ? data.schedule : undefined,
             calendar: Array.isArray(data.calendar) ? data.calendar : undefined,
+            flashcards: Array.isArray(data.flashcards) ? data.flashcards : undefined,
             studentName: data.studentName || undefined,
             educationLevel: data.educationLevel || undefined,
           });
@@ -586,7 +599,55 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       </section>
 
-      {/* 4. Complete Backup & Data Management */}
+      {/* 4. Firebase Cloud Sync & Multidevice Storage */}
+      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+              <Cloud className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-bold text-slate-900 dark:text-white text-base">
+                Sincronización en la Nube con Google Firebase
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Plan Gratuito Spark • Sincroniza asignaturas, apuntes, flashcards y horario entre tus dispositivos.
+              </p>
+            </div>
+          </div>
+
+          {onOpenAuthModal && (
+            <button
+              onClick={onOpenAuthModal}
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-xs transition-colors"
+            >
+              <CloudUpload className="w-4 h-4" />
+              <span>{firebaseUser ? 'Administrar Cuenta y Nube' : 'Iniciar Sesión / Sincronizar'}</span>
+            </button>
+          )}
+        </div>
+
+        <div className="p-4 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/40 text-xs text-blue-900 dark:text-blue-200 space-y-2">
+          <div className="flex items-center gap-2 font-bold text-blue-800 dark:text-blue-300">
+            <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <span>
+              {firebaseUser
+                ? `Conectado como: ${firebaseUser.email || firebaseUser.displayName || 'Usuario de Firebase'}`
+                : 'Modo Local Activo (Almacenamiento en tu dispositivo)'}
+            </span>
+          </div>
+          <p className="leading-relaxed text-[11px]">
+            {firebaseUser
+              ? 'Tus datos están protegidos por Reglas de Seguridad en Cloud Firestore para que solo tú puedas acceder a ellos desde cualquier móvil, tablet o PC.'
+              : 'Puedes usar EstudiaFácil sin registrarte guardando todo en tu navegador, o iniciar sesión con Google / Correo para tener sincronización automática entre dispositivos.'}
+          </p>
+        </div>
+      </section>
+
+      {/* 5. Mobile Shortcut / PWA Standalone Mode */}
+      <PWAInstallPrompt variant="settings" />
+
+      {/* 6. Complete Backup & Data Management */}
       <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
@@ -603,11 +664,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
 
         {/* Status indicator */}
-        <div className="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>
-            <strong>Autoguardado activo:</strong> Cada vez que añades o editas una asignatura, tema, apunte o clase, se guarda al instante.
-          </span>
+        <div className="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2.5">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <p className="font-bold">
+              Autoguardado activo en tiempo real y al salir de la web
+            </p>
+            <p className="text-[11px] text-emerald-700 dark:text-emerald-300/90 leading-relaxed">
+              Tus asignaturas, temas, apuntes, horarios, calendario y conversaciones con la IA se guardan automáticamente en tu dispositivo mientras escribes, y <strong>también se aseguran al cerrar la pestaña, cambiar de aplicación o salir del navegador</strong>. No perderás ningún dato.
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 pt-1">
