@@ -948,53 +948,53 @@ export const SubjectsExplorer: React.FC<SubjectsExplorerProps> = ({
                 </div>
               </div>
 
-              {/* Navigation Tabs inside the Topic */}
-              <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 overflow-x-auto pb-1">
+              {/* Navigation Tabs inside the Topic: Independent smooth horizontal scrolling */}
+              <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 overflow-x-auto no-scrollbar pb-2 pt-0.5 w-full">
                 <button
                   onClick={() => setActiveTopicTab('files')}
-                  className={`px-3.5 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap ${
+                  className={`px-3.5 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap shrink-0 ${
                     activeTopicTab === 'files'
                       ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                 >
-                  <FolderOpen className="w-4 h-4" />
+                  <FolderOpen className="w-4 h-4 shrink-0" />
                   <span>Archivos & Documentos ({currentTopic.files.length})</span>
                 </button>
 
                 <button
                   onClick={() => setActiveTopicTab('notes')}
-                  className={`px-3.5 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap ${
+                  className={`px-3.5 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap shrink-0 ${
                     activeTopicTab === 'notes'
                       ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                 >
-                  <Edit3 className="w-4 h-4" />
+                  <Edit3 className="w-4 h-4 shrink-0" />
                   <span>Apuntes del Tema</span>
                 </button>
 
                 <button
                   onClick={() => setActiveTopicTab('summaries')}
-                  className={`px-3.5 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap ${
+                  className={`px-3.5 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap shrink-0 ${
                     activeTopicTab === 'summaries'
                       ? 'bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                 >
-                  <Brain className="w-4 h-4 text-purple-500" />
+                  <Brain className="w-4 h-4 text-purple-500 shrink-0" />
                   <span>Resúmenes con IA ({currentTopic.summaries.length})</span>
                 </button>
 
                 <button
                   onClick={() => setActiveTopicTab('quizzes')}
-                  className={`px-3.5 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap ${
+                  className={`px-3.5 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all whitespace-nowrap shrink-0 ${
                     activeTopicTab === 'quizzes'
                       ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
                 >
-                  <HelpCircle className="w-4 h-4 text-emerald-500" />
+                  <HelpCircle className="w-4 h-4 text-emerald-500 shrink-0" />
                   <span>Quizzes & Flashcards ({currentTopic.quizzes.length})</span>
                 </button>
               </div>

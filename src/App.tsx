@@ -444,8 +444,8 @@ export default function App() {
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
       />
 
-      {/* Main Tab Views */}
-      <main className="flex-1">
+      {/* Main Tab Views: Centered layout */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-0 sm:px-4">
         {activeTab === 'subjects' && (
           <SubjectsExplorer
             subjects={subjects}

@@ -161,15 +161,15 @@ export const SchoolSchedule: React.FC<SchoolScheduleProps> = ({
         </div>
       )}
 
-      {/* Mobile Day Tabs Selector */}
-      <div className="md:hidden flex overflow-x-auto gap-2 pb-2">
+      {/* Mobile Day Tabs Selector: Smooth independent horizontal scroll */}
+      <div className="md:hidden flex overflow-x-auto no-scrollbar gap-2 pb-2 pt-0.5 w-full">
         {DAYS.map((day) => {
           const count = schedule.filter((s) => s.dayOfWeek === day.id).length;
           return (
             <button
               key={day.id}
               onClick={() => setSelectedDayTab(day.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
                 selectedDayTab === day.id
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'

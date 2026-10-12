@@ -57,13 +57,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 transition-colors shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 gap-3">
           {/* Logo & Brand */}
           <div
             onClick={() => setActiveTab('subjects')}
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center gap-3 cursor-pointer group shrink-0"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform shrink-0">
               <Sparkles className="w-5 h-5 animate-pulse" />
             </div>
             <div>
@@ -144,15 +144,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </nav>
 
-          {/* Right Action Controls */}
-          <div className="flex items-center gap-2">
+          {/* Right Action Controls: Independently scrollable horizontally on mobile, no cut-off */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 max-w-[65%] sm:max-w-none justify-end">
             {/* Student Profile Pill & Switcher */}
             {displayName ? (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={onOpenNameModal}
                   title="Gestionar o cambiar perfiles de estudiante"
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 text-xs font-bold text-indigo-700 dark:text-indigo-300 transition-all max-w-[170px] truncate group shadow-2xs"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 text-xs font-bold text-indigo-700 dark:text-indigo-300 transition-all max-w-[150px] truncate group shadow-2xs shrink-0"
                 >
                   <span className="text-base leading-none shrink-0">{displayAvatar}</span>
                   <span className="truncate">{displayName}</span>
@@ -164,7 +164,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     onClick={onLockProfile}
                     title="Bloquear perfil con PIN ahora"
-                    className="p-1.5 rounded-xl bg-slate-100 hover:bg-amber-100 dark:bg-slate-800 dark:hover:bg-amber-950/60 text-slate-500 hover:text-amber-600 dark:text-slate-400 dark:hover:text-amber-400 transition-colors"
+                    className="p-1.5 rounded-xl bg-slate-100 hover:bg-amber-100 dark:bg-slate-800 dark:hover:bg-amber-950/60 text-slate-500 hover:text-amber-600 dark:text-slate-400 dark:hover:text-amber-400 transition-colors shrink-0"
                   >
                     <Lock className="w-3.5 h-3.5" />
                   </button>
@@ -173,7 +173,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <button
                 onClick={onOpenNameModal}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 border border-purple-200 dark:border-purple-800 text-xs font-bold text-purple-700 dark:text-purple-300 transition-all"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 border border-purple-200 dark:border-purple-800 text-xs font-bold text-purple-700 dark:text-purple-300 transition-all shrink-0"
               >
                 <User className="w-3.5 h-3.5 text-purple-500" />
                 <span>Perfil</span>
@@ -182,7 +182,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Auto-Save Status Indicator */}
             {saveNotification ? (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 animate-in fade-in duration-200 shadow-2xs">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 animate-in fade-in duration-200 shadow-2xs shrink-0">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span className="hidden sm:inline">{saveNotification}</span>
                 <span className="sm:hidden">Guardado ✓</span>
@@ -190,7 +190,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <div
                 title="Autoguardado activado: todo lo que escribes se guarda al instante y también automáticamente al salir o recargar la web"
-                className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80"
+                className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80 shrink-0"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>Autoguardado al salir</span>
@@ -201,7 +201,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={() => setActiveTab('settings')}
               title={hasCustomKey ? 'API Key de Gemini configurada' : 'Configura tu API Key en Ajustes'}
-              className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+              className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors shrink-0 ${
                 hasCustomKey
                   ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
                   : 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
@@ -229,7 +229,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     ? `Sincronización activa en Firebase (${firebaseUser.email || 'Conectado'})`
                     : 'Conectar con Firebase para sincronizar entre dispositivos'
                 }
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border shadow-2xs ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border shadow-2xs shrink-0 ${
                   firebaseUser
                     ? 'bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'
                     : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-750'
@@ -244,13 +244,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
 
             {/* App Móvil PWA Install Shortcut Button */}
-            <PWAInstallPrompt variant="navbar" />
+            <div className="shrink-0">
+              <PWAInstallPrompt variant="navbar" />
+            </div>
 
             {/* Dark Mode Toggle */}
             <button
               onClick={toggleTheme}
               aria-label="Cambiar tema de color"
-              className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors"
+              className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors shrink-0"
             >
               {isDark ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-600" />}
             </button>
@@ -259,7 +261,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={() => setActiveTab('settings')}
               aria-label="Ajustes y configuración"
-              className={`p-2 rounded-xl transition-colors ${
+              className={`p-2 rounded-xl transition-colors shrink-0 ${
                 activeTab === 'settings'
                   ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300'
                   : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
@@ -271,80 +273,85 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] flex justify-around items-center shadow-lg">
-        <button
-          onClick={() => setActiveTab('subjects')}
-          className={`flex flex-col items-center py-1 px-2.5 rounded-lg text-[11px] font-medium transition-colors ${
-            activeTab === 'subjects'
-              ? 'text-indigo-600 dark:text-indigo-400'
-              : 'text-slate-500 dark:text-slate-400'
-          }`}
-        >
-          <BookOpen className="w-5 h-5 mb-0.5" />
-          <span>Materias</span>
-        </button>
+      {/* Mobile Bottom Navigation Bar: Independent horizontal scrolling without cutting */}
+      <nav
+        aria-label="Navegación móvil"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-lg shadow-slate-900/10"
+      >
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1.5 px-3 w-full justify-start sm:justify-center">
+          <button
+            onClick={() => setActiveTab('subjects')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl text-[11px] font-semibold transition-all shrink-0 min-w-[64px] ${
+              activeTab === 'subjects'
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/60'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <BookOpen className="w-5 h-5 mb-0.5 shrink-0" />
+            <span className="whitespace-nowrap">Materias</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('flashcards')}
-          className={`flex flex-col items-center py-1 px-2.5 rounded-lg text-[11px] font-medium transition-colors ${
-            activeTab === 'flashcards'
-              ? 'text-indigo-600 dark:text-indigo-400'
-              : 'text-slate-500 dark:text-slate-400'
-          }`}
-        >
-          <Layers className="w-5 h-5 mb-0.5 text-indigo-500" />
-          <span>Tarjetas</span>
-        </button>
+          <button
+            onClick={() => setActiveTab('flashcards')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl text-[11px] font-semibold transition-all shrink-0 min-w-[64px] ${
+              activeTab === 'flashcards'
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/60'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <Layers className="w-5 h-5 mb-0.5 text-indigo-500 shrink-0" />
+            <span className="whitespace-nowrap">Tarjetas</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('schedule')}
-          className={`flex flex-col items-center py-1 px-3 rounded-lg text-[11px] font-medium transition-colors ${
-            activeTab === 'schedule'
-              ? 'text-indigo-600 dark:text-indigo-400'
-              : 'text-slate-500 dark:text-slate-400'
-          }`}
-        >
-          <Clock className="w-5 h-5 mb-0.5" />
-          <span>Horario</span>
-        </button>
+          <button
+            onClick={() => setActiveTab('schedule')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl text-[11px] font-semibold transition-all shrink-0 min-w-[64px] ${
+              activeTab === 'schedule'
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/60'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <Clock className="w-5 h-5 mb-0.5 shrink-0" />
+            <span className="whitespace-nowrap">Horario</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('calendar')}
-          className={`flex flex-col items-center py-1 px-3 rounded-lg text-[11px] font-medium transition-colors ${
-            activeTab === 'calendar'
-              ? 'text-indigo-600 dark:text-indigo-400'
-              : 'text-slate-500 dark:text-slate-400'
-          }`}
-        >
-          <Calendar className="w-5 h-5 mb-0.5" />
-          <span>Calendario</span>
-        </button>
+          <button
+            onClick={() => setActiveTab('calendar')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl text-[11px] font-semibold transition-all shrink-0 min-w-[64px] ${
+              activeTab === 'calendar'
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/60'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <Calendar className="w-5 h-5 mb-0.5 shrink-0" />
+            <span className="whitespace-nowrap">Calendario</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('tutor')}
-          className={`flex flex-col items-center py-1 px-3 rounded-lg text-[11px] font-medium transition-colors ${
-            activeTab === 'tutor'
-              ? 'text-purple-600 dark:text-purple-400'
-              : 'text-slate-500 dark:text-slate-400'
-          }`}
-        >
-          <Sparkles className="w-5 h-5 mb-0.5 text-purple-500" />
-          <span>Tutor IA</span>
-        </button>
+          <button
+            onClick={() => setActiveTab('tutor')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl text-[11px] font-semibold transition-all shrink-0 min-w-[64px] ${
+              activeTab === 'tutor'
+                ? 'text-purple-600 dark:text-purple-400 bg-purple-50/80 dark:bg-purple-950/60'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <Sparkles className="w-5 h-5 mb-0.5 text-purple-500 shrink-0" />
+            <span className="whitespace-nowrap">Tutor IA</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`flex flex-col items-center py-1 px-3 rounded-lg text-[11px] font-medium transition-colors ${
-            activeTab === 'settings'
-              ? 'text-indigo-600 dark:text-indigo-400'
-              : 'text-slate-500 dark:text-slate-400'
-          }`}
-        >
-          <Settings className="w-5 h-5 mb-0.5" />
-          <span>Ajustes</span>
-        </button>
-      </div>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl text-[11px] font-semibold transition-all shrink-0 min-w-[64px] ${
+              activeTab === 'settings'
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/60'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <Settings className="w-5 h-5 mb-0.5 shrink-0" />
+            <span className="whitespace-nowrap">Ajustes</span>
+          </button>
+        </div>
+      </nav>
     </header>
   );
 };
